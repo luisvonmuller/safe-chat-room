@@ -1,5 +1,4 @@
 use crate::*;
-use axum::extract::Extension;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Room {
     // Result
@@ -10,6 +9,6 @@ pub struct Room {
 
 pub mod create;
 
-pub async fn handler(path: &str, rooms: Arc<Mutex<Option<Vec<Room>>>>) -> &'static str {
-    "Hello there"
+pub async fn handler(path: String, rooms: Arc<Mutex<Option<Vec<Room>>>>) -> Result<String, ()> {
+    Ok("Hello there".to_string())
 }

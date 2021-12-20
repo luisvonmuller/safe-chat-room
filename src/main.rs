@@ -7,7 +7,6 @@ use axum::{
     http::Request,
     response::IntoResponse,
     routing::get,
-    routing::get_service,
     AddExtensionLayer, Router,
 };
 use hyper::http::Response;
@@ -47,14 +46,28 @@ async fn main() {
 
     tracing_subscriber::fmt::init();
 
-    let service = tower::service_fn(|request: Request<Body>| async move {
-        println!("{:?}", request.uri().to_string());
-        Ok::<_, Infallible>(Response::new(Body::empty()))
+    let room_service = tower::service_fn(|request: Request<Body>| async move {
+        if let Ok(something) = room::handler(request.uri().to_string(), rooms).await {
+            // Lets upgrade protocols to WebSockets.
+          Response::builder()
+                .status(101) // Expectation Failed, as always
+                .body("Hey there, we have authenticated you and now We'll enter the room!".to_string())
+            
+        } else {
+            
+            Response::builder()
+                .status(417) // Expectation Failed, as always
+                .body(format!(          
+                "Hey there, either you don't have permissions to access this or if you does, this: {} do not exists anymore!",
+                request.uri().to_string()
+                ))
+        
+        }
     });
 
     // build our application with some routes
     let app = Router::new()
-        .route("/room/:id", get_service(service))
+        .route("/room/:id", axum::routing::any_service(room_service))
         .route("/lcr", get(ws_handler))
         .layer(
             ServiceBuilder::new()
