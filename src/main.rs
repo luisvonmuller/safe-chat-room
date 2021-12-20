@@ -28,7 +28,7 @@ async fn main() {
     rooms = play_arounds(rooms);
     // Tests for 10 rooms
     if let Some(rcollection) = &*rooms.lock().unwrap() {
-        assert_eq!(rcollection.len(), 11);
+        assert_eq!(rcollection.len(), 10);
     }
 
     println!("{:?}", *rooms.lock().unwrap());
@@ -55,9 +55,8 @@ async fn main() {
 
 fn play_arounds(mut rooms: Arc<Mutex<Option<Vec<Room>>>>) -> Arc<Mutex<Option<Vec<Room>>>> {
     let pseudo_rooms = rooms.clone();
-    for _tryout in 0..=10 {
+    for _tryout in 0..10 {
         if let Some(collection) = &mut *pseudo_rooms.lock().unwrap() {
-            // Option<None...>
             collection.push(crate::room::create_room::init(1, _tryout));
         } else {
             rooms = Arc::new(Mutex::new(Some(Vec::<Room>::new())));
