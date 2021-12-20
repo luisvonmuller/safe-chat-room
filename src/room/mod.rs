@@ -1,9 +1,15 @@
+use crate::*;
+use axum::extract::Extension;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Room {
     // Result
-    client: isize, // id
-    clerk: isize,  // id
-    room_id: u64,  // room_id: &'a mut OsRng, // Room Id (Temporary)
+    pub client: isize, // id
+    pub clerk: isize,  // id
+    pub id: u64,       // room_id:  Room Id (Temporary)
 }
 
-pub mod create_room;
+pub mod create;
+
+pub async fn handler(path: &str, rooms: Arc<Mutex<Option<Vec<Room>>>>) -> &'static str {
+    "Hello there"
+}

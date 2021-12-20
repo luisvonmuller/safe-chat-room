@@ -1,19 +1,26 @@
+#![allow(dead_code)]
 use axum::{
     extract::{
         ws::{WebSocket, WebSocketUpgrade},
         TypedHeader,
     },
+    http::Request,
     response::IntoResponse,
     routing::get,
-    Router,
+    routing::get_service,
+    AddExtensionLayer, Router,
 };
+use hyper::http::Response;
+use hyper::Body;
+use std::convert::Infallible;
 use std::net::SocketAddr;
-use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-
 use std::sync::{Arc, Mutex};
+use tower::ServiceBuilder;
+use tower_http::trace::DefaultMakeSpan;
+use tower_http::trace::TraceLayer;
 
 mod room;
-use room::Room;
+use room::*;
 
 #[tokio::main]
 async fn main() {
@@ -25,22 +32,37 @@ async fn main() {
     let mut rooms: Arc<Mutex<Option<Vec<Room>>>> = Arc::new(Mutex::new(None));
     assert_eq!(*rooms.lock().unwrap(), None); // Tests for None
 
-    rooms = play_arounds(rooms);
-    // Tests for 10 rooms
-    if let Some(rcollection) = &*rooms.lock().unwrap() {
-        assert_eq!(rcollection.len(), 10);
-    }
+    rooms = Arc::new(Mutex::new(Some(vec![Room {
+        client: 1,
+        clerk: 2,
+        id: 123 as u64,
+    }])));
+    // rooms = play_arounds(rooms);
+    // // Tests for 10 rooms
+    // if let Some(rcollection) = &*rooms.lock().unwrap() {
+    //     assert_eq!(rcollection.len(), 10);
+    // }
 
     println!("{:?}", *rooms.lock().unwrap());
 
     tracing_subscriber::fmt::init();
 
+    let service = tower::service_fn(|request: Request<Body>| async move {
+        println!("{:?}", request.uri().to_string());
+        Ok::<_, Infallible>(Response::new(Body::empty()))
+    });
+
     // build our application with some routes
     let app = Router::new()
-        .route("/lcr", get(ws_handler)) // lcr - LogIn -> Create Room -> New Url.
+        .route("/room/:id", get_service(service))
+        .route("/lcr", get(ws_handler))
         .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+            ServiceBuilder::new()
+                .layer(
+                    TraceLayer::new_for_http()
+                        .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+                )
+                .layer(AddExtensionLayer::new(rooms)),
         );
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 7777)); //Rafa morreira Mano.
@@ -57,7 +79,7 @@ fn play_arounds(mut rooms: Arc<Mutex<Option<Vec<Room>>>>) -> Arc<Mutex<Option<Ve
     let pseudo_rooms = rooms.clone();
     for _tryout in 0..10 {
         if let Some(collection) = &mut *pseudo_rooms.lock().unwrap() {
-            collection.push(crate::room::create_room::init(1, _tryout));
+            collection.push(crate::room::create::new(1, _tryout));
         } else {
             rooms = Arc::new(Mutex::new(Some(Vec::<Room>::new())));
             return play_arounds(rooms);
