@@ -22,9 +22,17 @@ async fn main() {
         std::env::set_var("RUST_LOG", "example_websockets=debug,tower_http=debug")
     }
     /* Get the global Room listings into an Arc Mutex starting with None room. */
-    let rooms: Arc<Mutex<Option<Vec<Room>>>> = Arc::new(Mutex::new(Some(Vec::<Room>::new())));
-    //assert_eq!(*rooms.lock().unwrap(), None); // Stands for  a pseudo None (Some(Vec[])) in the first run to instanciate the allocator<T>
-    play_arounds(rooms);
+    let mut rooms: Arc<Mutex<Option<Vec<Room>>>> = Arc::new(Mutex::new(None));
+    assert_eq!(*rooms.lock().unwrap(), None); // Tests for None
+
+    rooms = play_arounds(rooms);
+    // Tests for 10 rooms
+    if let Some(rcollection) = &*rooms.lock().unwrap() {
+        assert_eq!(rcollection.len(), 11);
+    }
+
+    println!("{:?}", *rooms.lock().unwrap());
+
     tracing_subscriber::fmt::init();
 
     // build our application with some routes
@@ -45,19 +53,18 @@ async fn main() {
         .unwrap();
 }
 
-fn play_arounds(rooms: Arc<Mutex<Option<Vec<Room>>>>) {
+fn play_arounds(mut rooms: Arc<Mutex<Option<Vec<Room>>>>) -> Arc<Mutex<Option<Vec<Room>>>> {
+    let pseudo_rooms = rooms.clone();
     for _tryout in 0..=10 {
-        /*
-        First unwrap gaves me the mutex guard.
-        The second one gives me the Option => None (As Vec<Room>)
-        Maybe I need someway to do mmmmm a default? And the pushes?
-        */
-        if let Some(temporary) = &mut *rooms.lock().unwrap() {
-            // unwrap or else.
-            temporary.push(crate::room::create_room::init(1, _tryout));
-        }
+        if let Some(collection) = &mut *pseudo_rooms.lock().unwrap() {
+            // Option<None...>
+            collection.push(crate::room::create_room::init(1, _tryout));
+        } else {
+            rooms = Arc::new(Mutex::new(Some(Vec::<Room>::new())));
+            return play_arounds(rooms);
+        };
     }
-    println!("{:?}", *rooms.lock().unwrap());
+    pseudo_rooms
 }
 
 async fn ws_handler(
