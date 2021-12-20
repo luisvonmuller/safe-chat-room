@@ -50,7 +50,7 @@ async fn main() {
         if let Ok(something) = room::handler(request.uri().to_string(), rooms).await {
             // Lets upgrade protocols to WebSockets.
           Response::builder()
-                .status(101) // Expectation Failed, as always
+                .status(103) // Early Hints - Shows that we are upgrading...
                 .body("Hey there, we have authenticated you and now We'll enter the room!".to_string())
             
         } else {
