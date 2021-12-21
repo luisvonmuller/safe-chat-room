@@ -21,3 +21,12 @@
 
 
                  Ok::<_, Infallible>(Response::new(Body::empty()))
+
+
+
+pub async fn handler(
+    request: Request<Body>,
+    rooms: &mut Mutex<Option<Vec<Room>>>
+) -> Result<hyper::Response<hyper::Body>, std::convert::Infallible> {
+     
+}

@@ -1,4 +1,4 @@
-#![allow(dead_code, unused_doc_comments, unused_variables)]
+#![allow(dead_code, unused_doc_comments, unused_variables, unused_imports)]
 use axum::{
     extract::{
         ws::{WebSocket, WebSocketUpgrade},
@@ -13,13 +13,17 @@ use hyper::http::Response;
 use hyper::Body; // This allows applications to not use memory they don’t need, and allows exerting back-pressure on connections by only reading when asked.
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
 use tower::ServiceBuilder;
 use tower_http::trace::DefaultMakeSpan;
 use tower_http::trace::TraceLayer;
 
+use std::sync::{Arc, Mutex};
+
 mod room;
+mod room_service;
+
 use room::*;
+use room_service::*;
 
 #[tokio::main]
 async fn main() {
@@ -28,7 +32,7 @@ async fn main() {
         std::env::set_var("RUST_LOG", "example_websockets=debug,tower_http=debug")
     }
     /* Get the global Room listings into an Arc Mutex starting with None room. */
-    let mut rooms: Arc<Mutex<Option<Vec<Room>>>> = Arc::new(Mutex::new(None));
+    let mut rooms: Rooms = Arc::new(Mutex::new(None));
     assert_eq!(*rooms.lock().unwrap(), None); // Tests for None
 
     rooms = Arc::new(Mutex::new(Some(vec![Room {
@@ -54,10 +58,11 @@ async fn main() {
     *  * Switchs protocols to Https Protocols to WebSocketUpgrade - Maybe I'll need some redirect? ( )
     *  * dono
     *****/
-    /* How do I give extra arguments to this closure? */
-    let room_service = tower::service_fn(|request: Request<Body>| async move {
-        return room::handler(request, &mut *rooms).await;
-    });
+    /* How do I give extra arguments to this closure?
+        How to create a closure that will bind the Arc<Mutex> + the request?
+        I need a FnMut closure not a FnOnce because rust?
+    */
+    let room_service = tower::service_fn(Room::call);
 
     // build our application with some routes
     let app = Router::new()

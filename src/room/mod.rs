@@ -1,7 +1,6 @@
 use crate::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Room {
-    // Result
     pub client: isize, // id
     pub clerk: isize,  // id
     pub id: u64,       // room_id:  Room Id (Temporary)
@@ -9,11 +8,24 @@ pub struct Room {
 
 pub mod create;
 
-pub async fn handler(
-    request: Request<Body>,
-    rooms: &mut Mutex<Option<Vec<Room>>>
-) -> Result<hyper::Response<hyper::Body>, std::convert::Infallible> {
-     /**
+use tower::Service;
+use http::{Request, Response, StatusCode};
+use std::pin::Pin;
+use std::future::Future;
+use std::task::Context;
+use std::task::Poll;
+
+impl Service<Request<Body>> for Room {
+    type Response = Request<Body>;
+    type Error = http::Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self,  rooms: &mut Arc<Mutex<Option<Vec<Room>>>>, request: Request<Vec<u8>>) -> Result<hyper::Response<hyper::Body>, std::convert::Infallible> {
+       /**
          * !About -> Theres a Binding to be match, on the interop between this and Axum Services.
          *  * Maybe this should be service on a layer and not actually a route... ?
          *  * Maybe I could use .post_service to switch protocols?
@@ -56,6 +68,7 @@ pub async fn handler(
          *  * Tower holds the closure
         //  * */
 
-        //Ok::<_, Infallible>(Response::new(Body::empty())) // Why this works?
+        //Ok::<_, Infallible>(Response::new(Body::empty())) // Why this works
         Ok::<_, Infallible>(res) // And this not? Since the Type is the same?
+    }
 }
