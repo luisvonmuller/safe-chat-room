@@ -1,4 +1,5 @@
-#![allow(dead_code)]
+#![feature(stream)]
+#![allow(dead_code, unused_doc_comments, unused_variables)]
 use axum::{
     extract::{
         ws::{WebSocket, WebSocketUpgrade},
@@ -10,7 +11,7 @@ use axum::{
     AddExtensionLayer, Router,
 };
 use hyper::http::Response;
-use hyper::Body;
+use hyper::Body; // This allows applications to not use memory they don’t need, and allows exerting back-pressure on connections by only reading when asked.
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
@@ -46,23 +47,51 @@ async fn main() {
 
     tracing_subscriber::fmt::init();
 
+    /**
+    TODO:
+    * * Implement a tower::service_fn closure with Returning Http codes over the Axum as Axum Valid Service
+    * !Steps:  // Make Work then make it Good
+    *  * First match the service Data Structure with multiple cases valids ( )
+    *  * Switchs protocols to Https Protocols to WebSocketUpgrade - Maybe I'll need some redirect? ( )
+    *  * dono
+    *****/
     let room_service = tower::service_fn(|request: Request<Body>| async move {
-        if let Ok(something) = room::handler(request.uri().to_string(), rooms).await {
-            // Lets upgrade protocols to WebSockets.
-          Response::builder()
-                .status(103) // Early Hints - Shows that we are upgrading...
-                .body("Hey there, we have authenticated you and now We'll enter the room!".to_string())
-            
-        } else {
-            
-            Response::builder()
-                .status(417) // Expectation Failed, as always
-                .body(format!(          
-                "Hey there, either you don't have permissions to access this or if you does, this: {} do not exists anymore!",
-                request.uri().to_string()
-                ))
-        
-        }
+        /**
+         * !About -> Theres a Binding to be match, on the interop between this and Axum Services.
+         *  * Maybe this should be service on a layer and not actually a route... ?
+         *  * Maybe I could use .post_service to switch protocols?
+         *
+         */
+
+        /** 
+         * !Atention -> I don't know the fuck I'm doing and this must be wrong.
+         * !ME -> Wen't to make cofe, just a sec 
+         */
+        let room_info: &'static str = Box::leak(&request.uri().to_string().into_boxed_str());
+        // Structures the HttpBody as Bytes.  - Dont know the diff betwen vec<u8> or Bytes ?
+        let body_chunks: Vec<Result<&str, std::io::Error>> = vec![
+            Ok("Hey there, either you don't have permissions to access this or if you does, this:"),
+            Ok(room_info), // How to make this live life enough?
+            Ok("Do not exist anymore."),
+        ];
+
+        let body_stream = futures_util::stream::iter(body_chunks);
+
+        /**
+         * !Ideas:
+         * * Looks like "The response" don't matters alot? - Maybe just send over the body?
+         * ! Notes :
+         *  * The body Structure Comes from -> Hyper
+         *  * The Response Comes from -> Hyper
+         *  * Tower holds the closure
+        //  * */
+        // let res = Response::builder()
+        //     .status(417) // Expectation Failed, as always
+        //     .body(body)
+        //     .expect("Unable to create `http::Response`");
+
+        //Ok::<_, Infallible>(Response::new(Body::empty())) // Why this works?
+        Ok::<_, Infallible>(Response::new(Body::wrap_stream(body_stream))) // And this not? Since the Type is the same?
     });
 
     // build our application with some routes
@@ -78,7 +107,7 @@ async fn main() {
                 .layer(AddExtensionLayer::new(rooms)),
         );
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 7777)); //Rafa morreira Mano.
+    let addr = SocketAddr::from(([127, 0, 0, 1], 80)); //Rafa morreira Mano.
 
     tracing::debug!("listening on {}", addr); // Further will be removed.
 

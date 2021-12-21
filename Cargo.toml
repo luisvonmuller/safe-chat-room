@@ -5,6 +5,7 @@ opt-level = 3
 publish = false
 version = "0.0.1"
 
+
 [dependencies]
 axum = {version = "0.4.2", features = ["ws", "headers"]}
 headers = "0.3.5"
@@ -16,3 +17,4 @@ tower = {version = "0.4", features = ["full"]}
 tower-http = {version = "0.2.0", features = ["fs", "trace"]}
 tracing = "0.1.29"
 tracing-subscriber = {version = "0.3.3", features = ["env-filter"]}
+futures-util = "0.3.19"
