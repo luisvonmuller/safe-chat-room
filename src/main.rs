@@ -66,12 +66,21 @@ async fn main() {
          * !Atention -> I don't know the fuck I'm doing and this must be wrong.
          * !ME -> Wen't to make cofe, just a sec
          */
-        let room_info: &'static str = Box::leak(request.uri().to_string().into_boxed_str());
+        let room_info: &'static str = Box::leak(
+            request
+                .uri()
+                .path()
+                .split("/")
+                .last()
+                .unwrap()
+                .to_string()
+                .into_boxed_str(),
+        );
         // Structures the HttpBody as Bytes.  - Dont know the diff betwen vec<u8> or Bytes ?
         let body_chunks: Vec<Result<&str, std::io::Error>> = vec![
-            Ok("Hey there, either you don't have permissions to access the room or if you does, this: "),
+            Ok("Hey there, either you don't have permissions to access the room or if you does, this room named: '"),
             Ok(room_info), // How to make this live life enough?
-            Ok(" does not exist anymore."),
+            Ok("' does not exist anymore."),
         ];
 
         let body_stream = futures_util::stream::iter(body_chunks);
