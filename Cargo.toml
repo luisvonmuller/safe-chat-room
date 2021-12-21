@@ -1,13 +1,14 @@
 [package]
 edition = "2021"
+features = ["stream"]
 name = "safe-chat-room"
 opt-level = 3
 publish = false
 version = "0.0.1"
 
-
 [dependencies]
 axum = {version = "0.4.2", features = ["ws", "headers"]}
+futures-util = "0.3.19"
 headers = "0.3.5"
 hyper = "0.14.16"
 rand = "0.8.4"
@@ -17,4 +18,3 @@ tower = {version = "0.4", features = ["full"]}
 tower-http = {version = "0.2.0", features = ["fs", "trace"]}
 tracing = "0.1.29"
 tracing-subscriber = {version = "0.3.3", features = ["env-filter"]}
-futures-util = "0.3.19"

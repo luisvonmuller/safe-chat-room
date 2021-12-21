@@ -1,4 +1,3 @@
-#![feature(stream)]
 #![allow(dead_code, unused_doc_comments, unused_variables)]
 use axum::{
     extract::{
@@ -35,7 +34,7 @@ async fn main() {
     rooms = Arc::new(Mutex::new(Some(vec![Room {
         client: 1,
         clerk: 2,
-        id: 123 as u64,
+        id: 123_u64,
     }])));
     // rooms = play_arounds(rooms);
     // // Tests for 10 rooms
@@ -63,16 +62,16 @@ async fn main() {
          *
          */
 
-        /** 
+        /**
          * !Atention -> I don't know the fuck I'm doing and this must be wrong.
-         * !ME -> Wen't to make cofe, just a sec 
+         * !ME -> Wen't to make cofe, just a sec
          */
-        let room_info: &'static str = Box::leak(&request.uri().to_string().into_boxed_str());
+        let room_info: &'static str = Box::leak(request.uri().to_string().into_boxed_str());
         // Structures the HttpBody as Bytes.  - Dont know the diff betwen vec<u8> or Bytes ?
         let body_chunks: Vec<Result<&str, std::io::Error>> = vec![
-            Ok("Hey there, either you don't have permissions to access this or if you does, this:"),
+            Ok("Hey there, either you don't have permissions to access the room or if you does, this: "),
             Ok(room_info), // How to make this live life enough?
-            Ok("Do not exist anymore."),
+            Ok(" does not exist anymore."),
         ];
 
         let body_stream = futures_util::stream::iter(body_chunks);
@@ -107,7 +106,7 @@ async fn main() {
                 .layer(AddExtensionLayer::new(rooms)),
         );
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 80)); //Rafa morreira Mano.
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8080)); //Rafa morreira Mano.
 
     tracing::debug!("listening on {}", addr); // Further will be removed.
 
@@ -147,7 +146,6 @@ async fn handle_socket(mut socket: WebSocket) {
             println!("Client says: {:?}", msg);
         } else {
             println!("client disconnected");
-            return;
         }
     }
 }
